@@ -6,15 +6,13 @@ textColor="#262730"
 font="sans serif"
 
 [server]
-enableCORS=false
+enableCORS=true
 enableXsrfProtection=true
 maxUploadSize=200
-enableStaticServing=true
 
 [browser]
 gatherUsageStats=false
 
-[security]
-enableXsrfProtection=true
-enableCORS=false
-enableStaticServing=true 
+[client]
+toolbarMode="minimal"
+showErrorDetails=false 
