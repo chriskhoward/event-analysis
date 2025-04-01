@@ -409,13 +409,15 @@ def main():
                             st.metric("Total Events Attended", total_events)
                         
                         with col2:
-                            unique_dates = attendee_data.select_dtypes(include=['datetime64']).nunique().sum()
+                            # Get date columns
+                            date_columns = attendee_data.select_dtypes(include=['datetime64']).columns
+                            unique_dates = pd.concat([attendee_data[col] for col in date_columns]).nunique()
                             st.metric("Unique Dates", unique_dates)
                         
                         with col3:
                             # Calculate most common day of week
-                            all_dates = pd.concat([attendee_data[col] for col in attendee_data.select_dtypes(include=['datetime64']).columns])
-                            most_common_day = all_dates.dt.day_name().mode().iloc[0]
+                            all_dates = pd.concat([attendee_data[col] for col in date_columns])
+                            most_common_day = all_dates.dt.day_name().mode().iloc[0] if not all_dates.empty else "N/A"
                             st.metric("Most Common Day", most_common_day)
                         
                         # Create tabs for different visualizations
@@ -423,131 +425,145 @@ def main():
                         
                         with tab1:
                             # Create timeline of events
-                            all_dates = pd.concat([attendee_data[col] for col in attendee_data.select_dtypes(include=['datetime64']).columns])
+                            all_dates = pd.concat([attendee_data[col] for col in date_columns])
                             all_dates = all_dates.dropna()
                             
-                            # Create a more detailed timeline
-                            fig_timeline = go.Figure()
-                            
-                            # Add scatter plot for events
-                            fig_timeline.add_trace(go.Scatter(
-                                x=all_dates,
-                                y=[1] * len(all_dates),
-                                mode='markers',
-                                marker=dict(
-                                    size=10,
-                                    color='#1f77b4',
-                                    symbol='circle'
-                                ),
-                                name='Events'
-                            ))
-                            
-                            # Update layout
-                            fig_timeline.update_layout(
-                                title="Event Timeline",
-                                xaxis_title="Date",
-                                yaxis_title="",
-                                showlegend=False,
-                                height=400,
-                                yaxis=dict(showticklabels=False),
-                                hovermode='x unified'
-                            )
-                            
-                            # Add hover text
-                            fig_timeline.update_traces(
-                                hovertemplate="Date: %{x}<br>Event<extra></extra>"
-                            )
-                            
-                            st.plotly_chart(fig_timeline, use_container_width=True)
+                            if not all_dates.empty:
+                                # Create a more detailed timeline
+                                fig_timeline = go.Figure()
+                                
+                                # Add scatter plot for events
+                                fig_timeline.add_trace(go.Scatter(
+                                    x=all_dates,
+                                    y=[1] * len(all_dates),
+                                    mode='markers',
+                                    marker=dict(
+                                        size=10,
+                                        color='#1f77b4',
+                                        symbol='circle'
+                                    ),
+                                    name='Events'
+                                ))
+                                
+                                # Update layout
+                                fig_timeline.update_layout(
+                                    title="Event Timeline",
+                                    xaxis_title="Date",
+                                    yaxis_title="",
+                                    showlegend=False,
+                                    height=400,
+                                    yaxis=dict(showticklabels=False),
+                                    hovermode='x unified'
+                                )
+                                
+                                # Add hover text
+                                fig_timeline.update_traces(
+                                    hovertemplate="Date: %{x}<br>Event<extra></extra>"
+                                )
+                                
+                                st.plotly_chart(fig_timeline, use_container_width=True)
+                            else:
+                                st.info("No date information available for this attendee.")
                         
                         with tab2:
                             # Day of week distribution
-                            all_dates = pd.concat([attendee_data[col] for col in attendee_data.select_dtypes(include=['datetime64']).columns])
+                            all_dates = pd.concat([attendee_data[col] for col in date_columns])
                             all_dates = all_dates.dropna()
-                            day_dist = all_dates.dt.day_name().value_counts()
                             
-                            # Reorder days of week
-                            day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-                            day_dist = day_dist.reindex(day_order)
-                            
-                            fig_days = px.bar(
-                                x=day_dist.index,
-                                y=day_dist.values,
-                                title="Attendance by Day of Week",
-                                color=day_dist.values,
-                                color_continuous_scale='Viridis'
-                            )
-                            
-                            fig_days.update_layout(
-                                xaxis_title="Day of Week",
-                                yaxis_title="Number of Events",
-                                height=400
-                            )
-                            
-                            st.plotly_chart(fig_days, use_container_width=True)
+                            if not all_dates.empty:
+                                day_dist = all_dates.dt.day_name().value_counts()
+                                
+                                # Reorder days of week
+                                day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                                day_dist = day_dist.reindex(day_order)
+                                
+                                fig_days = px.bar(
+                                    x=day_dist.index,
+                                    y=day_dist.values,
+                                    title="Attendance by Day of Week",
+                                    color=day_dist.values,
+                                    color_continuous_scale='Viridis'
+                                )
+                                
+                                fig_days.update_layout(
+                                    xaxis_title="Day of Week",
+                                    yaxis_title="Number of Events",
+                                    height=400
+                                )
+                                
+                                st.plotly_chart(fig_days, use_container_width=True)
+                            else:
+                                st.info("No date information available for this attendee.")
                         
                         with tab3:
                             # Monthly attendance
-                            all_dates = pd.concat([attendee_data[col] for col in attendee_data.select_dtypes(include=['datetime64']).columns])
+                            all_dates = pd.concat([attendee_data[col] for col in date_columns])
                             all_dates = all_dates.dropna()
-                            monthly_counts = all_dates.dt.to_period('M').value_counts().sort_index()
                             
-                            fig_monthly = px.bar(
-                                x=monthly_counts.index.astype(str),
-                                y=monthly_counts.values,
-                                title="Monthly Attendance",
-                                color=monthly_counts.values,
-                                color_continuous_scale='Viridis'
-                            )
-                            
-                            fig_monthly.update_layout(
-                                xaxis_title="Month",
-                                yaxis_title="Number of Events",
-                                height=400
-                            )
-                            
-                            st.plotly_chart(fig_monthly, use_container_width=True)
+                            if not all_dates.empty:
+                                monthly_counts = all_dates.dt.to_period('M').value_counts().sort_index()
+                                
+                                fig_monthly = px.bar(
+                                    x=monthly_counts.index.astype(str),
+                                    y=monthly_counts.values,
+                                    title="Monthly Attendance",
+                                    color=monthly_counts.values,
+                                    color_continuous_scale='Viridis'
+                                )
+                                
+                                fig_monthly.update_layout(
+                                    xaxis_title="Month",
+                                    yaxis_title="Number of Events",
+                                    height=400
+                                )
+                                
+                                st.plotly_chart(fig_monthly, use_container_width=True)
+                            else:
+                                st.info("No date information available for this attendee.")
                         
                         with tab4:
                             # Create a heatmap of attendance patterns
-                            all_dates = pd.concat([attendee_data[col] for col in attendee_data.select_dtypes(include=['datetime64']).columns])
+                            all_dates = pd.concat([attendee_data[col] for col in date_columns])
                             all_dates = all_dates.dropna()
                             
-                            # Create a DataFrame with day of week and month
-                            attendance_patterns = pd.DataFrame({
-                                'date': all_dates,
-                                'day_of_week': all_dates.dt.day_name(),
-                                'month': all_dates.dt.month_name()
-                            })
-                            
-                            # Create pivot table for heatmap
-                            pivot_table = pd.pivot_table(
-                                attendance_patterns,
-                                values='date',
-                                index='day_of_week',
-                                columns='month',
-                                aggfunc='count'
-                            ).fillna(0)
-                            
-                            # Reorder days of week
-                            day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-                            pivot_table = pivot_table.reindex(day_order)
-                            
-                            # Create heatmap
-                            fig_heatmap = px.imshow(
-                                pivot_table,
-                                title="Attendance Patterns by Day and Month",
-                                aspect='auto',
-                                color_continuous_scale='Viridis'
-                            )
-                            
-                            fig_heatmap.update_layout(
-                                xaxis_title="Month",
-                                yaxis_title="Day of Week",
-                                height=500
-                            )
-                            
-                            st.plotly_chart(fig_heatmap, use_container_width=True)
+                            if not all_dates.empty:
+                                # Create a DataFrame with day of week and month
+                                attendance_patterns = pd.DataFrame({
+                                    'date': all_dates,
+                                    'day_of_week': all_dates.dt.day_name(),
+                                    'month': all_dates.dt.month_name()
+                                })
+                                
+                                # Create pivot table for heatmap
+                                pivot_table = pd.pivot_table(
+                                    attendance_patterns,
+                                    values='date',
+                                    index='day_of_week',
+                                    columns='month',
+                                    aggfunc='count'
+                                ).fillna(0)
+                                
+                                # Reorder days of week
+                                day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                                pivot_table = pivot_table.reindex(day_order)
+                                
+                                # Create heatmap
+                                fig_heatmap = px.imshow(
+                                    pivot_table,
+                                    title="Attendance Patterns by Day and Month",
+                                    aspect='auto',
+                                    color_continuous_scale='Viridis'
+                                )
+                                
+                                fig_heatmap.update_layout(
+                                    xaxis_title="Month",
+                                    yaxis_title="Day of Week",
+                                    height=500
+                                )
+                                
+                                st.plotly_chart(fig_heatmap, use_container_width=True)
+                            else:
+                                st.info("No date information available for this attendee.")
                         
                         # Display raw data with better formatting
                         st.subheader("Event Details")
@@ -580,7 +596,9 @@ def main():
                         st.header(f"Analysis for {search_event}")
                         
                         # Get event dates
-                        event_dates = event_data.select_dtypes(include=['datetime64']).iloc[:, 0]
+                        date_columns = event_data.select_dtypes(include=['datetime64']).columns
+                        event_dates = pd.concat([event_data[col] for col in date_columns])
+                        event_dates = event_dates.dropna()
                         
                         # Calculate comprehensive statistics
                         stats = calculate_event_stats(event_data, event_dates)
@@ -611,47 +629,50 @@ def main():
                         
                         with tab1:
                             # Create attendance timeline
-                            attendance_counts = event_data.groupby(event_dates).size()
-                            
-                            fig_timeline = go.Figure()
-                            
-                            # Add line plot
-                            fig_timeline.add_trace(go.Scatter(
-                                x=attendance_counts.index,
-                                y=attendance_counts.values,
-                                mode='lines+markers',
-                                name='Attendance'
-                            ))
-                            
-                            # Add trend line
-                            if len(attendance_counts) > 1:
-                                x = np.arange(len(attendance_counts))
-                                z = np.polyfit(x, attendance_counts.values, 1)
-                                p = np.poly1d(z)
+                            if not event_dates.empty:
+                                attendance_counts = event_data.groupby(event_dates).size()
+                                
+                                fig_timeline = go.Figure()
+                                
+                                # Add line plot
                                 fig_timeline.add_trace(go.Scatter(
                                     x=attendance_counts.index,
-                                    y=p(x),
-                                    mode='lines',
-                                    name='Trend',
-                                    line=dict(dash='dash')
+                                    y=attendance_counts.values,
+                                    mode='lines+markers',
+                                    name='Attendance'
                                 ))
-                            
-                            fig_timeline.update_layout(
-                                title="Attendance Over Time",
-                                xaxis_title="Date",
-                                yaxis_title="Number of Attendees",
-                                height=400,
-                                showlegend=True
-                            )
-                            
-                            st.plotly_chart(fig_timeline, use_container_width=True)
+                                
+                                # Add trend line
+                                if len(attendance_counts) > 1:
+                                    x = np.arange(len(attendance_counts))
+                                    z = np.polyfit(x, attendance_counts.values, 1)
+                                    p = np.poly1d(z)
+                                    fig_timeline.add_trace(go.Scatter(
+                                        x=attendance_counts.index,
+                                        y=p(x),
+                                        mode='lines',
+                                        name='Trend',
+                                        line=dict(dash='dash')
+                                    ))
+                                
+                                fig_timeline.update_layout(
+                                    title="Attendance Over Time",
+                                    xaxis_title="Date",
+                                    yaxis_title="Number of Attendees",
+                                    height=400,
+                                    showlegend=True
+                                )
+                                
+                                st.plotly_chart(fig_timeline, use_container_width=True)
+                            else:
+                                st.info("No date information available for this event.")
                             
                             # Add attendance statistics
                             st.subheader("Attendance Statistics")
                             col1, col2, col3 = st.columns(3)
                             
                             with col1:
-                                st.write("Peak Date:", stats['peak_date'].strftime('%Y-%m-%d'))
+                                st.write("Peak Date:", stats['peak_date'].strftime('%Y-%m-%d') if 'peak_date' in stats else "N/A")
                                 st.write("Standard Deviation:", f"{stats['attendance_std']:.1f}")
                             
                             with col2:
@@ -667,7 +688,7 @@ def main():
                             name_column = None
                             for col in df.columns:
                                 if df[col].dtype == 'object' or df[col].dtype == 'string':
-                                    if df[col].astype(str).str.replace(' ', '').isalpha().all():
+                                    if df[col].astype(str).str.replace(' ', '').str.isalpha().all():
                                         name_column = col
                                         break
                             
@@ -716,7 +737,8 @@ def main():
                             if compare_event:
                                 # Find and filter data for comparison event
                                 compare_data = df[df[event_column].astype(str).str.contains(compare_event, case=False, na=False)]
-                                compare_dates = compare_data.select_dtypes(include=['datetime64']).iloc[:, 0]
+                                compare_dates = pd.concat([compare_data[col] for col in compare_data.select_dtypes(include=['datetime64']).columns])
+                                compare_dates = compare_dates.dropna()
                                 compare_stats = calculate_event_stats(compare_data, compare_dates)
                                 
                                 # Create comparison metrics
@@ -742,93 +764,99 @@ def main():
                                     )
                                 
                                 # Create comparison visualization
-                                fig_compare = go.Figure()
-                                
-                                # Add traces for both events
-                                fig_compare.add_trace(go.Scatter(
-                                    x=event_dates,
-                                    y=event_data.groupby(event_dates).size(),
-                                    name=search_event,
-                                    mode='lines+markers'
-                                ))
-                                
-                                fig_compare.add_trace(go.Scatter(
-                                    x=compare_dates,
-                                    y=compare_data.groupby(compare_dates).size(),
-                                    name=compare_event,
-                                    mode='lines+markers'
-                                ))
-                                
-                                fig_compare.update_layout(
-                                    title="Attendance Comparison",
-                                    xaxis_title="Date",
-                                    yaxis_title="Number of Attendees",
-                                    height=400,
-                                    showlegend=True
-                                )
-                                
-                                st.plotly_chart(fig_compare, use_container_width=True)
+                                if not event_dates.empty and not compare_dates.empty:
+                                    fig_compare = go.Figure()
+                                    
+                                    # Add traces for both events
+                                    fig_compare.add_trace(go.Scatter(
+                                        x=event_dates,
+                                        y=event_data.groupby(event_dates).size(),
+                                        name=search_event,
+                                        mode='lines+markers'
+                                    ))
+                                    
+                                    fig_compare.add_trace(go.Scatter(
+                                        x=compare_dates,
+                                        y=compare_data.groupby(compare_dates).size(),
+                                        name=compare_event,
+                                        mode='lines+markers'
+                                    ))
+                                    
+                                    fig_compare.update_layout(
+                                        title="Attendance Comparison",
+                                        xaxis_title="Date",
+                                        yaxis_title="Number of Attendees",
+                                        height=400,
+                                        showlegend=True
+                                    )
+                                    
+                                    st.plotly_chart(fig_compare, use_container_width=True)
+                                else:
+                                    st.info("No date information available for comparison.")
                         
                         with tab5:
                             st.subheader("Advanced Analytics")
                             
-                            # Create a DataFrame for advanced analysis
-                            analysis_df = pd.DataFrame({
-                                'Date': event_dates,
-                                'Attendance': event_data.groupby(event_dates).size(),
-                                'Day of Week': event_dates.dt.day_name(),
-                                'Month': event_dates.dt.month_name()
-                            })
-                            
-                            # Calculate correlations
-                            st.write("Correlation Analysis")
-                            correlation_matrix = analysis_df[['Attendance', 'Day of Week', 'Month']].corr()
-                            fig_corr = px.imshow(
-                                correlation_matrix,
-                                title="Correlation Matrix",
-                                color_continuous_scale='RdBu'
-                            )
-                            st.plotly_chart(fig_corr, use_container_width=True)
-                            
-                            # Time series decomposition
-                            st.write("Time Series Analysis")
-                            from statsmodels.tsa.seasonal import seasonal_decompose
-                            
-                            # Resample data to monthly frequency
-                            monthly_data = analysis_df.set_index('Date')['Attendance'].resample('M').mean()
-                            
-                            # Perform decomposition
-                            decomposition = seasonal_decompose(monthly_data, period=12)
-                            
-                            # Plot components
-                            fig_decomp = go.Figure()
-                            
-                            fig_decomp.add_trace(go.Scatter(
-                                x=decomposition.trend.index,
-                                y=decomposition.trend,
-                                name='Trend'
-                            ))
-                            
-                            fig_decomp.add_trace(go.Scatter(
-                                x=decomposition.seasonal.index,
-                                y=decomposition.seasonal,
-                                name='Seasonal'
-                            ))
-                            
-                            fig_decomp.add_trace(go.Scatter(
-                                x=decomposition.resid.index,
-                                y=decomposition.resid,
-                                name='Residual'
-                            ))
-                            
-                            fig_decomp.update_layout(
-                                title="Time Series Decomposition",
-                                xaxis_title="Date",
-                                yaxis_title="Value",
-                                height=600
-                            )
-                            
-                            st.plotly_chart(fig_decomp, use_container_width=True)
+                            if not event_dates.empty:
+                                # Create a DataFrame for advanced analysis
+                                analysis_df = pd.DataFrame({
+                                    'Date': event_dates,
+                                    'Attendance': event_data.groupby(event_dates).size(),
+                                    'Day of Week': event_dates.dt.day_name(),
+                                    'Month': event_dates.dt.month_name()
+                                })
+                                
+                                # Calculate correlations
+                                st.write("Correlation Analysis")
+                                correlation_matrix = analysis_df[['Attendance', 'Day of Week', 'Month']].corr()
+                                fig_corr = px.imshow(
+                                    correlation_matrix,
+                                    title="Correlation Matrix",
+                                    color_continuous_scale='RdBu'
+                                )
+                                st.plotly_chart(fig_corr, use_container_width=True)
+                                
+                                # Time series decomposition
+                                st.write("Time Series Analysis")
+                                from statsmodels.tsa.seasonal import seasonal_decompose
+                                
+                                # Resample data to monthly frequency
+                                monthly_data = analysis_df.set_index('Date')['Attendance'].resample('M').mean()
+                                
+                                # Perform decomposition
+                                decomposition = seasonal_decompose(monthly_data, period=12)
+                                
+                                # Plot components
+                                fig_decomp = go.Figure()
+                                
+                                fig_decomp.add_trace(go.Scatter(
+                                    x=decomposition.trend.index,
+                                    y=decomposition.trend,
+                                    name='Trend'
+                                ))
+                                
+                                fig_decomp.add_trace(go.Scatter(
+                                    x=decomposition.seasonal.index,
+                                    y=decomposition.seasonal,
+                                    name='Seasonal'
+                                ))
+                                
+                                fig_decomp.add_trace(go.Scatter(
+                                    x=decomposition.resid.index,
+                                    y=decomposition.resid,
+                                    name='Residual'
+                                ))
+                                
+                                fig_decomp.update_layout(
+                                    title="Time Series Decomposition",
+                                    xaxis_title="Date",
+                                    yaxis_title="Value",
+                                    height=600
+                                )
+                                
+                                st.plotly_chart(fig_decomp, use_container_width=True)
+                            else:
+                                st.info("No date information available for advanced analytics.")
                         
                     else:
                         st.warning(f"No data found for {search_event}")
