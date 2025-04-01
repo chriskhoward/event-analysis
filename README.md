@@ -1,6 +1,83 @@
-# Event Attendance Analysis Dashboard
+# HAULYP Event Analysis Application
 
-An interactive dashboard for analyzing event attendance data from Excel files.
+## Overview
+This application analyzes event attendance data from Wild Apricot exports, providing insights into both event and member participation patterns.
+
+## Setup Instructions
+
+1. Install Python requirements:
+```bash
+pip install -r requirements.txt
+```
+
+2. Create a `.env` file in the root directory with your admin password:
+```
+ADMIN_PASSWORD=your_password_here
+```
+
+## Running the Application
+
+1. Start the application:
+```bash
+streamlit run event_analysis/app.py
+```
+
+2. Open your web browser and navigate to:
+   - Local URL: http://localhost:8501
+   - Or use the Network URL shown in the terminal for access from other devices
+
+## Using the Application
+
+### 1. Data Upload
+- Click the "Upload Data" section at the top
+- Upload your Wild Apricot Excel export file
+- The app accepts `.xls` or `.xlsx` files
+
+### 2. Analysis Types
+Choose between two types of analysis:
+
+#### Member Analysis
+1. Select "Member Name" from the dropdown
+2. Use the search box to find a specific member
+   - You can search by first or last name
+   - The dropdown will filter as you type
+3. Select a member from the dropdown to view their:
+   - Total events attended
+   - Unique dates attended
+   - Most common day of attendance
+   - Event timeline
+   - Day of week distribution
+   - Monthly attendance patterns
+
+#### Event Analysis
+1. Select "Event Name" from the dropdown
+2. Use the search and sort options to find your event:
+   - Search by event name or location
+   - Sort by:
+     - Name (alphabetical)
+     - Date (newest/oldest)
+     - Location
+3. Select an event to view:
+   - Total attendance
+   - Average attendance
+   - Number of occurrences
+   - Attendance trends
+   - List of attendees with attendance rates
+
+## Tips
+- Use the search functionality to quickly find specific members or events
+- Sort options help organize events by date or location
+- Hover over graphs for detailed information
+- Use the full-screen button on graphs for a better view
+
+## Troubleshooting
+- If the file upload fails, ensure it's in the correct Excel format
+- Check that date columns are properly formatted in your Excel file
+- Ensure all required columns are present (Event Title, Date, Location)
+- If you encounter errors, verify your Excel file matches the expected Wild Apricot export format
+
+## Support
+For additional support or to report issues, please contact your system administrator.
 
 ## Features
 
@@ -25,17 +102,6 @@ python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -e .
 ```
-
-## Usage
-
-1. Start the dashboard:
-```bash
-event-analysis
-```
-
-2. Open your browser and navigate to http://localhost:8501
-
-3. Upload your Excel file and start analyzing!
 
 ## Deployment
 

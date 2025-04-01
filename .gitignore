@@ -1,8 +1,10 @@
+# Environment variables
+.env
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
 .Python
 build/
 develop-eggs/
@@ -21,9 +23,7 @@ wheels/
 *.egg
 
 # Virtual Environment
-.env
-.venv
-env/
+.venv/
 venv/
 ENV/
 
@@ -33,12 +33,14 @@ ENV/
 *.swp
 *.swo
 
-# OS
+# Operating System
 .DS_Store
 Thumbs.db
 
-# Project specific
+# Excel files (since they contain sensitive data)
 *.xls
 *.xlsx
 *.csv
+
+# Logs
 *.log 
