@@ -58,10 +58,7 @@ def main():
     if not check_password():
         st.stop()
 
-    # Title
-    st.title("Event Attendance Analysis Dashboard")
-
-    # Initialize session state for the dataframe and unique names
+    # Initialize session state variables
     if 'df' not in st.session_state:
         st.session_state.df = None
     if 'unique_names' not in st.session_state:
@@ -74,6 +71,36 @@ def main():
         st.session_state.merged_df = None
     if 'name_matches' not in st.session_state:
         st.session_state.name_matches = []
+
+    # Title
+    st.title("Event Attendance Analysis Dashboard")
+
+    # File upload
+    uploaded_file = st.file_uploader("Upload Excel file", type=['xlsx', 'xls'])
+    if uploaded_file is not None:
+        try:
+            # Read the Excel file
+            df = pd.read_excel(uploaded_file)
+            st.session_state.df = df
+            
+            # Get name and event columns
+            name_columns = get_unique_names(df)
+            event_columns = get_unique_events(df)
+            
+            # Store in session state
+            st.session_state.unique_names = name_columns
+            st.session_state.unique_events = event_columns
+            
+            # Display column information
+            st.write("### Data Preview")
+            st.write(f"Found {len(name_columns)} name columns: {', '.join(name_columns)}")
+            st.write(f"Found {len(event_columns)} event columns: {', '.join(event_columns)}")
+            
+            # Display first few rows
+            st.dataframe(df.head())
+            
+        except Exception as e:
+            st.error(f"Error loading uploaded file: {str(e)}")
 
     # Name standardization function
     def standardize_name(name):
@@ -224,26 +251,38 @@ def main():
 
     # Function to get unique names from the dataframe
     def get_unique_names(df):
-        names = set()
+        """Get unique names from the dataframe."""
+        name_columns = []
         for col in df.columns:
-            if df[col].dtype == 'object' or df[col].dtype == 'string':
-                # Get unique values from this column
-                unique_values = df[col].dropna().unique()
-                # Add to names set if they look like names (contain only letters and spaces)
-                names.update([str(val) for val in unique_values if str(val).replace(' ', '').isalpha()])
-        return sorted(list(names))
+            try:
+                # Convert to string and handle NaN values
+                values = df[col].fillna('').astype(str)
+                # Check if all non-empty values contain only letters and spaces
+                if values.str.replace(' ', '').str.isalpha().all():
+                    name_columns.append(col)
+            except:
+                continue
+        return name_columns
 
     # Function to get unique events from the dataframe
     def get_unique_events(df):
-        events = set()
-        # Look for columns that might contain event names (non-date, non-name columns)
+        """Get unique events from the dataframe."""
+        event_columns = []
         for col in df.columns:
-            if df[col].dtype == 'object' or df[col].dtype == 'string':
+            try:
                 # Skip columns that look like they contain names
-                if not df[col].astype(str).str.replace(' ', '').str.isalpha().all():
-                    unique_values = df[col].dropna().unique()
-                    events.update([str(val) for val in unique_values if len(str(val)) > 0])
-        return sorted(list(events))
+                if df[col].astype(str).str.replace(' ', '').str.isalpha().all():
+                    continue
+                # Skip columns that are all NaN
+                if df[col].isna().all():
+                    continue
+                # Skip columns that are all the same value
+                if df[col].nunique() <= 1:
+                    continue
+                event_columns.append(col)
+            except:
+                continue
+        return event_columns
 
     # Function to calculate event statistics
     def calculate_event_stats(event_data, event_dates):
