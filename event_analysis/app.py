@@ -10,10 +10,53 @@ from scipy import stats
 from fuzzywuzzy import fuzz
 from nameparser import HumanName
 import re
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Set page config
+st.set_page_config(
+    page_title="Event Attendance Analysis",
+    page_icon="📊",
+    layout="wide"
+)
+
+# Authentication
+def check_password():
+    """Returns `True` if the user had the correct password."""
+
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if st.session_state["username"] in st.session_state["credentials"]:
+            if st.session_state["password"] == st.session_state["credentials"][st.session_state["username"]]:
+                st.session_state["password_correct"] = True
+                del st.session_state["password"]  # Don't store password
+            else:
+                st.session_state["password_correct"] = False
+
+    # First run or credentials not loaded
+    if "credentials" not in st.session_state:
+        st.session_state["credentials"] = {
+            os.getenv("ADMIN_USERNAME", "admin"): os.getenv("ADMIN_PASSWORD", "admin123"),
+            os.getenv("USER_USERNAME", "user"): os.getenv("USER_PASSWORD", "user123")
+        }
+
+    # Return True if the password is validated.
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Show inputs for username + password.
+    st.text_input("Username", on_change=password_entered, key="username")
+    st.text_input("Password", type="password", on_change=password_entered, key="password")
+    if "password_correct" in st.session_state:
+        st.error("😕 User not known or password incorrect")
+    return False
 
 def main():
-    # Set page config
-    st.set_page_config(page_title="Event Attendance Analysis", layout="wide")
+    # Check authentication
+    if not check_password():
+        st.stop()
 
     # Title
     st.title("Event Attendance Analysis Dashboard")
